@@ -12,6 +12,7 @@ export class ImageEditor {
         
         this.onPointAdded = null; // Callback
         this.onPointSelected = null; // Callback
+        this.isMultiSelectActive = false;
         
         this.image.addEventListener('click', (e) => this.handleImageClick(e));
     }
@@ -50,6 +51,7 @@ export class ImageEditor {
             this.addRecognitionPoint(x_natural, y_natural);
         }
     }
+    
 
     addLocationPoint(x, y) {
         const id = Date.now().toString(); // Simple ID
@@ -74,6 +76,11 @@ export class ImageEditor {
 
     removeRecognitionPoint(id) {
         this.recognitionPoints = this.recognitionPoints.filter(p => p.id !== id);
+        this.renderPoints();
+    }
+    
+    removeSelectedRecognitionPoints() {
+        this.recognitionPoints = this.recognitionPoints.filter(p => !p.selected);
         this.renderPoints();
     }
 
@@ -124,6 +131,17 @@ export class ImageEditor {
             if (p.selected) el.style.boxShadow = '0 0 0 4px yellow';
             el.style.left = (p.x * scaleX) + 'px';
             el.style.top = (p.y * scaleY) + 'px';
+            el.dataset.id = p.id;
+            el.addEventListener('click', (ev) => {
+                if (ev.ctrlKey || ev.metaKey || this.isMultiSelectActive) {
+                    p.selected = !p.selected;
+                } else {
+                    this.recognitionPoints.forEach(tp => tp.selected = false);
+                    p.selected = true;
+                }
+                this.renderPoints();
+                if (this.onPointSelected) this.onPointSelected(p);
+            });
             
             if (p.label) {
                 const label = document.createElement('div');

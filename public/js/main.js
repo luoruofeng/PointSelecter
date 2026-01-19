@@ -17,6 +17,7 @@ const btnAddLabel = document.getElementById('btn-add-label');
 const btnSaveLabel = document.getElementById('btn-save-label');
 const btnExportJson = document.getElementById('btn-export-json');
 const btnExportXml = document.getElementById('btn-export-xml');
+const btnDeleteSelected = document.getElementById('btn-delete-selected');
 
 const locationList = document.getElementById('location-points-list');
 const recognitionList = document.getElementById('recognition-points-list');
@@ -86,6 +87,11 @@ editor.onPointAdded = (type, point) => {
         }
         renderRecognitionList();
     }
+};
+
+editor.onPointSelected = () => {
+    renderRecognitionList();
+    updateSelectAllCheckbox();
 };
 
 // --- Rendering Lists ---
@@ -173,6 +179,7 @@ function renderRecognitionList() {
             }
         });
     });
+    updateSelectAllCheckbox();
 }
 
 // --- Calibration Validation ---
@@ -247,7 +254,29 @@ selectAllCheckbox.addEventListener('change', (e) => {
     editor.renderPoints();
 });
 
+btnDeleteSelected.addEventListener('click', () => {
+    deleteSelected();
+});
+
+function deleteSelected() {
+    const hasSelection = editor.recognitionPoints.some(p => p.selected);
+    if (!hasSelection) return;
+    editor.removeSelectedRecognitionPoints();
+    renderRecognitionList();
+    updateSelectAllCheckbox();
+}
+
+function updateSelectAllCheckbox() {
+    if (!editor.recognitionPoints.length) {
+        selectAllCheckbox.checked = false;
+        return;
+    }
+    const allSelected = editor.recognitionPoints.every(p => p.selected);
+    selectAllCheckbox.checked = allSelected;
+}
+
 btnAddLabel.addEventListener('click', () => {
+    // Check if any selected
     // Check if any selected
     const hasSelection = editor.recognitionPoints.some(p => p.selected);
     if (!hasSelection) {
@@ -319,4 +348,26 @@ function downloadBlob(blob, filename) {
 // Resize listener
 window.addEventListener('resize', () => {
     editor.refreshPositions();
+});
+
+document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    const key = e.key.toLowerCase();
+    if (key === 'p') {
+        if (!btnAddRecognition.disabled) btnAddRecognition.click();
+    } else if (key === 'd') {
+        deleteSelected();
+    } else if (key === 'a') {
+        btnAddLabel.click();
+    } else if (key === 'c') {
+        editor.isMultiSelectActive = true;
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
+    if (key === 'c') {
+        editor.isMultiSelectActive = false;
+    }
 });

@@ -32,6 +32,8 @@ body {
 
 .point-recognition {
     background-color: #0d6efd; /* Blue */
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .point-label {
