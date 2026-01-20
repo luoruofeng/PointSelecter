@@ -1026,6 +1026,7 @@ btnExportJson.addEventListener('click', () => {
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     downloadBlob(blob, 'points.json');
+    exportAnnotatedImage();
 });
 
 btnExportXml.addEventListener('click', () => {
@@ -1050,6 +1051,7 @@ btnExportXml.addEventListener('click', () => {
     
     const blob = new Blob([xml], { type: 'application/xml' });
     downloadBlob(blob, 'points.xml');
+    exportAnnotatedImage();
 });
 btnExportCsv.addEventListener('click', () => {
     const header = 'id,label,x,y\r\n';
@@ -1063,6 +1065,7 @@ btnExportCsv.addEventListener('click', () => {
     });
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
     downloadBlob(blob, 'points.csv');
+    exportAnnotatedImage();
 });
 
 btnExportExcel.addEventListener('click', () => {
@@ -1078,6 +1081,7 @@ btnExportExcel.addEventListener('click', () => {
     html += '</tbody></table></body></html>';
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     downloadBlob(blob, 'points.xls');
+    exportAnnotatedImage();
 });
 
 function downloadBlob(blob, filename) {
@@ -1091,6 +1095,125 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(url);
 }
 
+function downloadDataURL(dataUrl, filename) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function exportAnnotatedImage() {
+    const rect = targetImage.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(rect.width);
+    canvas.height = Math.round(rect.height);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    // draw background image (as displayed)
+    ctx.drawImage(targetImage, 0, 0, canvas.width, canvas.height);
+    // scales for converting natural coords to display pixels
+    const scaleX = rect.width / targetImage.naturalWidth;
+    const scaleY = rect.height / targetImage.naturalHeight;
+    // draw location points (red)
+    editor.locationPoints.forEach((p, index) => {
+        const x = p.x * scaleX;
+        const y = p.y * scaleY;
+        drawPoint(ctx, x, y, '#dc3545', false);
+        drawRefLabel(ctx, x, y - 18, `Point ${index + 1}`);
+    });
+    // draw recognition points (blue)
+    editor.recognitionPoints.forEach(p => {
+        const x = p.x * scaleX;
+        const y = p.y * scaleY;
+        drawPoint(ctx, x, y, '#0d6efd', p.selected);
+        if (p.label) drawBadgeLabel(ctx, x, y - 20, p.label);
+        drawIdTag(ctx, x + 14, y, String(p.id));
+    });
+    const ts = new Date();
+    const name = `annotated-${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}-${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}${String(ts.getSeconds()).padStart(2,'0')}.png`;
+    downloadDataURL(canvas.toDataURL('image/png'), name);
+}
+
+function drawPoint(ctx, x, y, color, selected) {
+    ctx.save();
+    // selection highlight ring
+    if (selected) {
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+    }
+    // white ring (box-shadow mimic)
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // main dot
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawBadgeLabel(ctx, x, y, text) {
+    ctx.save();
+    ctx.font = '10px Arial';
+    const padX = 4, padY = 2;
+    const metrics = ctx.measureText(text);
+    const w = metrics.width + padX * 2;
+    const h = 14;
+    const bx = x - w / 2;
+    const by = y - h;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = '#fff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + padX, by + h / 2);
+    ctx.restore();
+}
+
+function drawRefLabel(ctx, x, y, text) {
+    ctx.save();
+    ctx.font = '10px Arial';
+    const padX = 4, padY = 2;
+    const metrics = ctx.measureText(text);
+    const w = metrics.width + padX * 2;
+    const h = 14;
+    const bx = x - w / 2;
+    const by = y - h;
+    ctx.fillStyle = 'rgba(220, 53, 69, 0.85)';
+    ctx.fillRect(bx, by, w, h);
+    ctx.fillStyle = '#fff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + padX, by + h / 2);
+    ctx.restore();
+}
+
+function drawIdTag(ctx, x, y, text) {
+    ctx.save();
+    ctx.font = '10px Arial';
+    const padX = 3;
+    const metrics = ctx.measureText(text);
+    const w = metrics.width + padX * 2;
+    const h = 12;
+    const bx = x;
+    const by = y - h / 2;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillRect(bx, by, w, h);
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, w, h);
+    ctx.fillStyle = '#333';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + padX, y);
+    ctx.restore();
+}
 // Resize listener
 window.addEventListener('resize', () => {
     editor.refreshPositions();
