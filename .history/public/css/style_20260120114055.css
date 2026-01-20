@@ -16,16 +16,6 @@ body {
     pointer-events: none;
 }
 
-.card-header .btn-group .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 12px;
-    border-radius: 6px;
-}
-.card-header .btn-group {
-    flex-wrap: wrap;
-    gap: 0.25rem;
-}
-
 .pan-active {
     cursor: grab;
 }

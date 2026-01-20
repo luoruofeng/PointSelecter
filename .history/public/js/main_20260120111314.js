@@ -25,17 +25,10 @@ const btnExportExcel = document.getElementById('btn-export-excel');
 const btnExportCsv = document.getElementById('btn-export-csv');
 const btnDeleteSelected = document.getElementById('btn-delete-selected');
 const btnSelectUnlabeled = document.getElementById('btn-select-unlabeled');
-const btnZoomIn = document.getElementById('btn-zoom-in');
-const btnZoomOut = document.getElementById('btn-zoom-out');
-const btnPan = document.getElementById('btn-pan');
-const btnZoomReset = document.getElementById('btn-zoom-reset');
 
 const locationList = document.getElementById('location-points-list');
 const recognitionList = document.getElementById('recognition-points-list');
 const selectAllCheckbox = document.getElementById('select-all-points');
-const recogSearchInput = document.getElementById('recog-search');
-const coordPrecisionSelect = document.getElementById('coord-precision');
-const coordRoundCheckbox = document.getElementById('coord-round');
 const imageWrapper = document.getElementById('image-wrapper');
 const pointsLayer = document.getElementById('points-layer');
 const marqueeBox = document.getElementById('marquee-box');
@@ -57,14 +50,7 @@ let pickModeActive = false;
 let pickCanvas = null, pickCtx = null, pickData = null, pickW = 0, pickH = 0;
 let marqueeActive = false, marqueeStart = null;
 let lassoActive = false, lassoPoints = [], lassoClosed = false, lassoDrawing = false, lassoStartClient = null;
-let recogSearchTerm = '';
-let coordPrecision = 2;
-let coordRound = true;
 let selectedColors = [];
-let zoomScale = 1;
-let panActive = false;
-let isPanning = false;
-let panLast = null;
 
 targetImage.setAttribute('draggable', 'false');
 targetImage.addEventListener('dragstart', (e) => e.preventDefault());
@@ -113,32 +99,6 @@ btnAddRecognition.addEventListener('click', () => {
     editor.setMode('recognition');
     btnAddRecognition.classList.add('active');
     btnAddLocation.classList.remove('active');
-});
-
-btnZoomIn.addEventListener('click', () => {
-    setZoom(Math.min(5, zoomScale * 1.2));
-});
-btnZoomOut.addEventListener('click', () => {
-    setZoom(Math.max(0.1, zoomScale / 1.2));
-});
-btnZoomReset.addEventListener('click', () => {
-    setZoom(1);
-});
-btnPan.addEventListener('click', () => {
-    if (panActive) {
-        deactivatePan();
-    } else {
-        activatePan();
-    }
-});
-
-coordPrecisionSelect.addEventListener('change', (e) => {
-    coordPrecision = parseInt(e.target.value, 10) || 2;
-    renderRecognitionList();
-});
-coordRoundCheckbox.addEventListener('change', (e) => {
-    coordRound = e.target.checked;
-    renderRecognitionList();
 });
 
 // Color recognition modal open
@@ -246,16 +206,12 @@ function renderLocationList() {
 
 function renderRecognitionList() {
     recognitionList.innerHTML = '';
-    const filtered = editor.recognitionPoints.filter(p => {
-        if (!recogSearchTerm) return true;
-        return String(p.id).includes(recogSearchTerm);
-    });
-    filtered.forEach(p => {
+    editor.recognitionPoints.forEach(p => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><input type="checkbox" class="recog-select" data-id="${p.id}" ${p.selected ? 'checked' : ''}></td>
             <td>${p.id}</td>
-            <td>(${formatCoord(p.realX)}, ${formatCoord(p.realY)})</td>
+            <td>(${p.realX.toFixed(2)}, ${p.realY.toFixed(2)})</td>
             <td><span class="badge bg-secondary">${p.label || '-'}</span></td>
             <td><button class="btn btn-sm btn-danger btn-delete-recog" data-id="${p.id}">&times;</button></td>
         `;
@@ -283,21 +239,6 @@ function renderRecognitionList() {
     });
     updateSelectAllCheckbox();
 }
-
-function formatCoord(val) {
-    if (coordRound) {
-        return Number(val).toFixed(coordPrecision);
-    } else {
-        const factor = Math.pow(10, coordPrecision);
-        const trunc = Math.trunc(Number(val) * factor) / factor;
-        return trunc.toFixed(coordPrecision);
-    }
-}
-
-recogSearchInput.addEventListener('input', (e) => {
-    recogSearchTerm = e.target.value.trim();
-    renderRecognitionList();
-});
 
 // --- Calibration Validation ---
 function validateCalibration() {
@@ -365,10 +306,6 @@ function setCalibrationStatus(isValid) {
         btnLassoSelect.disabled = false;
         btnLassoSelect.classList.remove('btn-outline-secondary');
         btnLassoSelect.classList.add('btn-secondary');
-        btnZoomIn.disabled = false;
-        btnZoomOut.disabled = false;
-        btnZoomReset.disabled = false;
-        btnPan.disabled = false;
     } else {
         btnAddRecognition.disabled = true;
         btnAddRecognition.classList.add('btn-outline-primary');
@@ -385,17 +322,12 @@ function setCalibrationStatus(isValid) {
         btnLassoSelect.disabled = true;
         btnLassoSelect.classList.add('btn-outline-secondary');
         btnLassoSelect.classList.remove('btn-secondary');
-        btnZoomIn.disabled = true;
-        btnZoomOut.disabled = true;
-        btnZoomReset.disabled = true;
-        btnPan.disabled = true;
         if (editor.mode === 'recognition') {
             editor.setMode('none'); // Exit mode if calibration lost
         }
         if (pickModeActive) deactivatePickMode();
         if (marqueeActive) deactivateMarquee();
         if (lassoActive) deactivateLasso();
-        if (panActive) deactivatePan();
     }
 }
 
@@ -482,14 +414,14 @@ function renderColorsList(palette) {
         const colorStr = `rgb(${c.r}, ${c.g}, ${c.b})`;
         const bright = Math.sqrt(0.299 * c.r * c.r + 0.587 * c.g * c.g + 0.114 * c.b * c.b);
         const isLight = bright > 220;
-        const prechecked = selectedColors.some(sc => colorDistance(sc, c) < 8);
+        const prechecked = selectedColors.some(sc => colorDistance(sc, c) < 8) && !isLight;
         col.innerHTML = `
             <div class="form-check d-flex align-items-center gap-2">
-                <input class="form-check-input color-choice" type="checkbox" id="color-${idx}" ${prechecked ? 'checked' : ''}
+                <input class="form-check-input color-choice" type="checkbox" id="color-${idx}" ${isLight ? 'disabled' : (prechecked ? 'checked' : '')}
                     data-r="${c.r}" data-g="${c.g}" data-b="${c.b}">
                 <label class="form-check-label" for="color-${idx}">
                     <span class="d-inline-block" style="width:20px;height:20px;border:1px solid #ddd;border-radius:4px;background:${colorStr};vertical-align:middle;"></span>
-                    <span class="ms-2 small text-muted">${colorStr}</span>
+                    <span class="ms-2 small ${isLight ? 'text-danger' : 'text-muted'}">${isLight ? '浅色不可选择' : colorStr}</span>
                 </label>
             </div>
         `;
@@ -686,6 +618,11 @@ async function handlePickClick(e) {
     if (!pickModeActive) return;
     const p = getPixelColorAtClientEvent(e);
     const color = { r: p.r, g: p.g, b: p.b };
+    const bright = Math.sqrt(0.299 * color.r * color.r + 0.587 * color.g * color.g + 0.114 * color.b * color.b);
+    if (bright > 220) {
+        alert('该颜色过浅，已忽略。');
+        return;
+    }
     const exists = selectedColors.some(c => colorDistance(c, color) < 8);
     if (!exists) selectedColors.push(color);
     await prepareColorModal();
@@ -734,12 +671,6 @@ function activateMarquee() {
     editor.setMode('none');
     imageWrapper.classList.add('marquee-active');
     pointsLayer.style.pointerEvents = 'none';
-    if (lassoActive) deactivateLasso();
-    if (panActive) deactivatePan();
-    if (pickModeActive) deactivatePickMode();
-    btnMarqueeSelect.classList.remove('btn-secondary');
-    btnMarqueeSelect.classList.add('btn-success');
-    btnMarqueeSelect.classList.add('active');
     imageWrapper.addEventListener('mousedown', onMarqueeMouseDown, { passive: false });
     imageWrapper.addEventListener('mousemove', onMarqueeMouseMove, { passive: false });
     imageWrapper.addEventListener('mouseup', onMarqueeMouseUp);
@@ -752,9 +683,6 @@ function deactivateMarquee() {
     marqueeBox.style.display = 'none';
     imageWrapper.classList.remove('marquee-active');
     pointsLayer.style.pointerEvents = 'auto';
-    btnMarqueeSelect.classList.remove('btn-success');
-    btnMarqueeSelect.classList.remove('active');
-    btnMarqueeSelect.classList.add('btn-secondary');
     imageWrapper.removeEventListener('mousedown', onMarqueeMouseDown);
     imageWrapper.removeEventListener('mousemove', onMarqueeMouseMove);
     imageWrapper.removeEventListener('mouseup', onMarqueeMouseUp);
@@ -826,12 +754,6 @@ function activateLasso() {
     lassoStartClient = null;
     editor.setMode('none');
     pointsLayer.style.pointerEvents = 'none';
-    if (marqueeActive) deactivateMarquee();
-    if (panActive) deactivatePan();
-    if (pickModeActive) deactivatePickMode();
-    btnLassoSelect.classList.remove('btn-secondary');
-    btnLassoSelect.classList.add('btn-warning');
-    btnLassoSelect.classList.add('active');
     targetImage.addEventListener('mousedown', onLassoMouseDown, { passive: false });
     targetImage.addEventListener('mousemove', onLassoMouseMove, { passive: false });
     document.addEventListener('mouseup', onLassoMouseUp);
@@ -845,9 +767,6 @@ function deactivateLasso() {
     lassoPoints = [];
     lassoStartClient = null;
     pointsLayer.style.pointerEvents = 'auto';
-    btnLassoSelect.classList.remove('btn-warning');
-    btnLassoSelect.classList.remove('active');
-    btnLassoSelect.classList.add('btn-secondary');
     targetImage.removeEventListener('mousedown', onLassoMouseDown);
     targetImage.removeEventListener('mousemove', onLassoMouseMove);
     document.removeEventListener('mouseup', onLassoMouseUp);
@@ -937,72 +856,8 @@ function applyLassoSelection() {
     renderRecognitionList();
     editor.renderPoints();
     updateSelectAllCheckbox();
-    deactivateLasso();
 }
 
-function setZoom(scale) {
-    zoomScale = scale;
-    targetImage.style.maxWidth = 'none';
-    targetImage.style.width = (targetImage.naturalWidth * zoomScale) + 'px';
-    editor.refreshPositions();
-}
-
-function activatePan() {
-    panActive = true;
-    isPanning = false;
-    pointsLayer.style.pointerEvents = 'none';
-    btnPan.classList.remove('btn-outline-dark');
-    btnPan.classList.add('btn-info');
-    btnPan.classList.add('active');
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.add('pan-active');
-    viewport.addEventListener('mousedown', onPanMouseDown, { passive: false });
-    viewport.addEventListener('mousemove', onPanMouseMove, { passive: false });
-    document.addEventListener('mouseup', onPanMouseUp);
-}
-
-function deactivatePan() {
-    panActive = false;
-    isPanning = false;
-    panLast = null;
-    pointsLayer.style.pointerEvents = 'auto';
-    btnPan.classList.remove('btn-info');
-    btnPan.classList.remove('active');
-    btnPan.classList.add('btn-outline-dark');
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.remove('pan-active');
-    viewport.classList.remove('pan-grabbing');
-    viewport.removeEventListener('mousedown', onPanMouseDown);
-    viewport.removeEventListener('mousemove', onPanMouseMove);
-    document.removeEventListener('mouseup', onPanMouseUp);
-}
-
-function onPanMouseDown(e) {
-    if (!panActive) return;
-    e.preventDefault();
-    isPanning = true;
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.add('pan-grabbing');
-    panLast = { x: e.clientX, y: e.clientY };
-}
-
-function onPanMouseMove(e) {
-    if (!panActive || !isPanning) return;
-    e.preventDefault();
-    const viewport = imageWrapper.parentElement;
-    const dx = e.clientX - panLast.x;
-    const dy = e.clientY - panLast.y;
-    viewport.scrollLeft -= dx;
-    viewport.scrollTop -= dy;
-    panLast = { x: e.clientX, y: e.clientY };
-}
-
-function onPanMouseUp() {
-    if (!panActive) return;
-    isPanning = false;
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.remove('pan-grabbing');
-}
 function pointInPolygon(pt, poly) {
     let inside = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -1021,7 +876,7 @@ btnExportJson.addEventListener('click', () => {
     editor.recognitionPoints.forEach(p => {
         const lbl = p.label || 'Unlabeled';
         if (!data[lbl]) data[lbl] = [];
-        data[lbl].push({ id: p.id, x: formatCoord(p.realX), y: formatCoord(p.realY) });
+        data[lbl].push({ id: p.id, x: p.realX, y: p.realY });
     });
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -1042,7 +897,7 @@ btnExportXml.addEventListener('click', () => {
     for (const [label, points] of Object.entries(groups)) {
         xml += `  <group label="${label}">\n`;
         points.forEach(p => {
-            xml += `    <point id="${p.id}" x="${formatCoord(p.realX)}" y="${formatCoord(p.realY)}" />\n`;
+            xml += `    <point id="${p.id}" x="${p.realX}" y="${p.realY}" />\n`;
         });
         xml += `  </group>\n`;
     }
@@ -1057,8 +912,8 @@ btnExportCsv.addEventListener('click', () => {
     editor.recognitionPoints.forEach(p => {
         const id = String(p.id);
         const label = (p.label || '').replace(/"/g, '""');
-        const x = formatCoord(p.realX);
-        const y = formatCoord(p.realY);
+        const x = String(p.realX);
+        const y = String(p.realY);
         rows += `"${id}","${label}","${x}","${y}"\r\n`;
     });
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
@@ -1071,8 +926,8 @@ btnExportExcel.addEventListener('click', () => {
     editor.recognitionPoints.forEach(p => {
         const id = String(p.id);
         const label = (p.label || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const x = formatCoord(p.realX);
-        const y = formatCoord(p.realY);
+        const x = String(p.realX);
+        const y = String(p.realY);
         html += `<tr><td>${id}</td><td>${label}</td><td>${x}</td><td>${y}</td></tr>`;
     });
     html += '</tbody></table></body></html>';

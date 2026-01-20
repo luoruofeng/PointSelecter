@@ -7,31 +7,6 @@ body {
     display: inline-block;
 }
 
-#image-tools {
-    border-radius: 0 0 0.5rem 0.5rem;
-    box-shadow: inset 0 1px 0 rgba(0,0,0,0.05);
-}
-
-.btn-group .btn i {
-    pointer-events: none;
-}
-
-.card-header .btn-group .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 12px;
-    border-radius: 6px;
-}
-.card-header .btn-group {
-    flex-wrap: wrap;
-    gap: 0.25rem;
-}
-
-.pan-active {
-    cursor: grab;
-}
-.pan-grabbing {
-    cursor: grabbing;
-}
 #image-wrapper.mode-location {
     cursor: crosshair;
 }
@@ -79,33 +54,6 @@ body {
     white-space: nowrap;
 }
 
-.point-id {
-    position: absolute;
-    top: 50%;
-    left: 14px;
-    transform: translateY(-50%);
-    background: rgba(255,255,255,0.8);
-    color: #333;
-    padding: 0 3px;
-    border-radius: 3px;
-    font-size: 10px;
-    line-height: 1.2;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.point-ref-label {
-    position: absolute;
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(220,53,69,0.85);
-    color: #fff;
-    padding: 1px 4px;
-    border-radius: 4px;
-    font-size: 10px;
-    line-height: 1;
-}
-
 /* Row animations */
 .list-group-item, tr {
     transition: all 0.3s ease;
@@ -139,40 +87,6 @@ body {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-#lasso-layer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 30;
-    pointer-events: none;
-}
-.lasso-point {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    transform: translate(-50%, -50%);
-    background: #ff1493;
-    border-radius: 50%;
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
-    pointer-events: auto;
-    cursor: pointer;
-}
-.lasso-label {
-    position: absolute;
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 20, 147, 0.85);
-    color: #fff;
-    padding: 1px 4px;
-    border-radius: 4px;
-    font-size: 10px;
-    line-height: 1;
-    box-shadow: 0 2px 8px rgba(255, 20, 147, 0.25);
-}
-
 #marquee-box {
     position: absolute;
     border: 2px dashed #0d6efd;
@@ -180,4 +94,3 @@ body {
     box-shadow: 0 8px 24px rgba(13,110,253,0.25);
     z-index: 20;
 }
-

@@ -121,6 +121,10 @@ export class ImageEditor {
             el.style.left = (p.x * scaleX) + 'px';
             el.style.top = (p.y * scaleY) + 'px';
             el.title = `Ref Point ${index + 1}`;
+            const lab = document.createElement('div');
+            lab.className = 'point-ref-label';
+            lab.innerText = `Point ${index + 1}`;
+            el.appendChild(lab);
             this.pointsLayer.appendChild(el);
         });
 
@@ -149,6 +153,10 @@ export class ImageEditor {
                 label.innerText = p.label;
                 el.appendChild(label);
             }
+            const idlab = document.createElement('div');
+            idlab.className = 'point-id';
+            idlab.innerText = String(p.id);
+            el.appendChild(idlab);
             
             this.pointsLayer.appendChild(el);
         });

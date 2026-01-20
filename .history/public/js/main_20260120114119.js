@@ -736,7 +736,6 @@ function activateMarquee() {
     pointsLayer.style.pointerEvents = 'none';
     if (lassoActive) deactivateLasso();
     if (panActive) deactivatePan();
-    if (pickModeActive) deactivatePickMode();
     btnMarqueeSelect.classList.remove('btn-secondary');
     btnMarqueeSelect.classList.add('btn-success');
     btnMarqueeSelect.classList.add('active');
@@ -828,7 +827,6 @@ function activateLasso() {
     pointsLayer.style.pointerEvents = 'none';
     if (marqueeActive) deactivateMarquee();
     if (panActive) deactivatePan();
-    if (pickModeActive) deactivatePickMode();
     btnLassoSelect.classList.remove('btn-secondary');
     btnLassoSelect.classList.add('btn-warning');
     btnLassoSelect.classList.add('active');

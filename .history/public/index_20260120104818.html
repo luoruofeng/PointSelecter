@@ -38,25 +38,24 @@
                     <div class="card shadow-sm mb-4">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Image View</h5>
-                            <div class="btn-group flex-wrap gap-1">
-                                <button id="btn-add-location" class="btn btn-sm btn-outline-danger" title="Add Reference Point">
+                            <div class="btn-group">
+                                <button id="btn-add-location" class="btn btn-outline-danger" title="Add Reference Point">
                                     <i class="fas fa-map-marker-alt me-1"></i> Add Location Point
                                 </button>
-                                <button id="btn-add-recognition" class="btn btn-sm btn-outline-primary" disabled title="Calibrate first to enable">
+                                <button id="btn-add-recognition" class="btn btn-outline-primary" disabled title="Calibrate first to enable">
                                     <i class="fas fa-crosshairs me-1"></i> Add Recognition Point
                                 </button>
-                                <button id="btn-color-recognition" class="btn btn-sm btn-outline-secondary" disabled title="Detect colors and add points">
+                                <button id="btn-color-recognition" class="btn btn-outline-secondary" disabled title="Detect colors and add points">
                                     <i class="fas fa-palette me-1"></i> Color Recognition
                                 </button>
-                                <button id="btn-color-pick" class="btn btn-sm btn-outline-secondary" disabled title="Pick a color region">
+                                <button id="btn-color-pick" class="btn btn-outline-secondary" disabled title="Pick a color region">
                                     <i class="fas fa-eye-dropper me-1"></i> 颜色拾取
                                 </button>
-                                <div id="pick-ui" class="ms-2 d-none align-items-center"></div>
-                                <button id="btn-marquee-select" class="btn btn-sm btn-outline-secondary" disabled title="Drag a box to select points">
+                                <div id="pick-ui" class="ms-2 d-none align-items-center">
+                                    <input type="range" id="pick-density-range" class="form-range ms-3" style="width:160px;" min="1" max="10" step="1" value="5">
+                                </div>
+                                <button id="btn-marquee-select" class="btn btn-outline-secondary" disabled title="Drag a box to select points">
                                     <i class="fas fa-vector-square me-1"></i> 框选识别点
-                                </button>
-                                <button id="btn-lasso-select" class="btn btn-sm btn-outline-secondary" disabled title="Click polygon to select points">
-                                    <i class="fas fa-draw-polygon me-1"></i> 不规则选框
                                 </button>
                             </div>
                         </div>
@@ -66,24 +65,7 @@
                                 <img id="target-image" src="" alt="Target" class="img-fluid" style="max-width: 100%;" draggable="false">
                                 <!-- Points will be injected here -->
                                 <div id="points-layer"></div>
-                                <div id="lasso-layer"></div>
                                 <div id="marquee-box" style="display:none;"></div>
-                            </div>
-                        </div>
-                        <div id="image-tools" class="bg-light border-top px-3 py-2 d-flex justify-content-center gap-2">
-                            <div class="btn-group">
-                                <button id="btn-zoom-out" class="btn btn-sm btn-outline-dark" title="缩小">
-                                    <i class="fas fa-magnifying-glass-minus"></i>
-                                </button>
-                                <button id="btn-zoom-in" class="btn btn-sm btn-outline-dark" title="放大">
-                                    <i class="fas fa-magnifying-glass-plus"></i>
-                                </button>
-                                <button id="btn-pan" class="btn btn-sm btn-outline-dark" title="移动（拖动）">
-                                    <i class="fas fa-up-down-left-right"></i>
-                                </button>
-                                <button id="btn-zoom-reset" class="btn btn-sm btn-outline-dark" title="100% 显示">
-                                    100%
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -110,38 +92,14 @@
                     <!-- Recognition Points Panel -->
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2">
-                                <h6 class="mb-0"><i class="fas fa-crosshairs me-2"></i>Recognition Points</h6>
-                                <input id="recog-search" type="text" class="form-control form-control-sm" placeholder="Search ID" style="width:120px;">
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="btn-group">
-                                    <button id="btn-add-label" class="btn btn-sm btn-light text-primary">
-                                        <i class="fas fa-tag me-1"></i> Add Label
-                                    </button>
-                                    <button id="btn-delete-selected" class="btn btn-sm btn-light text-danger">
-                                        <i class="fas fa-trash-alt me-1"></i> Delete Selected
-                                    </button>
-                                    <button id="btn-select-unlabeled" class="btn btn-sm btn-light text-warning">
-                                        <i class="fas fa-filter me-1"></i> 选中未标注
-                                    </button>
-                                </div>
-                                <select id="coord-precision" class="form-select form-select-sm bg-light text-dark" style="width:90px;">
-                                    <option value="0">小数位 0</option>
-                                    <option value="1">小数位 1</option>
-                                    <option value="2" selected>小数位 2</option>
-                                    <option value="3">小数位 3</option>
-                                    <option value="4">小数位 4</option>
-                                    <option value="5">小数位 5</option>
-                                    <option value="6">小数位 6</option>
-                                    <option value="7">小数位 7</option>
-                                    <option value="8">小数位 8</option>
-                                    <option value="9">小数位 9</option>
-                                </select>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="coord-round" checked>
-                                    <label class="form-check-label small" for="coord-round">四舍五入</label>
-                                </div>
+                            <h6 class="mb-0"><i class="fas fa-crosshairs me-2"></i>Recognition Points</h6>
+                            <div class="btn-group">
+                                <button id="btn-add-label" class="btn btn-sm btn-light text-primary">
+                                    <i class="fas fa-tag me-1"></i> Add Label
+                                </button>
+                                <button id="btn-delete-selected" class="btn btn-sm btn-light text-danger">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete Selected
+                                </button>
                             </div>
                         </div>
                         <div class="card-body p-0">

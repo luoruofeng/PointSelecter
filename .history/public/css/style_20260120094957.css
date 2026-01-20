@@ -1,0 +1,68 @@
+body {
+    background-color: #f8f9fa;
+}
+
+#image-wrapper {
+    cursor: default;
+    display: inline-block;
+    width: 100%;
+}
+
+#image-wrapper.mode-location {
+    cursor: crosshair;
+}
+
+#image-wrapper.mode-recognition {
+    cursor: crosshair;
+}
+
+.point {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+    pointer-events: none; /* Let clicks pass through to image wrapper usually, unless we want to drag */
+}
+
+.point-location {
+    background-color: #dc3545; /* Red */
+}
+
+.point-recognition {
+    background-color: #0d6efd; /* Blue */
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.point-label {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* Row animations */
+.list-group-item, tr {
+    transition: all 0.3s ease;
+}
+
+.point-row-hover {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+#points-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}

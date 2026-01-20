@@ -25,10 +25,6 @@ const btnExportExcel = document.getElementById('btn-export-excel');
 const btnExportCsv = document.getElementById('btn-export-csv');
 const btnDeleteSelected = document.getElementById('btn-delete-selected');
 const btnSelectUnlabeled = document.getElementById('btn-select-unlabeled');
-const btnZoomIn = document.getElementById('btn-zoom-in');
-const btnZoomOut = document.getElementById('btn-zoom-out');
-const btnPan = document.getElementById('btn-pan');
-const btnZoomReset = document.getElementById('btn-zoom-reset');
 
 const locationList = document.getElementById('location-points-list');
 const recognitionList = document.getElementById('recognition-points-list');
@@ -61,10 +57,6 @@ let recogSearchTerm = '';
 let coordPrecision = 2;
 let coordRound = true;
 let selectedColors = [];
-let zoomScale = 1;
-let panActive = false;
-let isPanning = false;
-let panLast = null;
 
 targetImage.setAttribute('draggable', 'false');
 targetImage.addEventListener('dragstart', (e) => e.preventDefault());
@@ -113,23 +105,6 @@ btnAddRecognition.addEventListener('click', () => {
     editor.setMode('recognition');
     btnAddRecognition.classList.add('active');
     btnAddLocation.classList.remove('active');
-});
-
-btnZoomIn.addEventListener('click', () => {
-    setZoom(Math.min(5, zoomScale * 1.2));
-});
-btnZoomOut.addEventListener('click', () => {
-    setZoom(Math.max(0.1, zoomScale / 1.2));
-});
-btnZoomReset.addEventListener('click', () => {
-    setZoom(1);
-});
-btnPan.addEventListener('click', () => {
-    if (panActive) {
-        deactivatePan();
-    } else {
-        activatePan();
-    }
 });
 
 coordPrecisionSelect.addEventListener('change', (e) => {
@@ -365,10 +340,6 @@ function setCalibrationStatus(isValid) {
         btnLassoSelect.disabled = false;
         btnLassoSelect.classList.remove('btn-outline-secondary');
         btnLassoSelect.classList.add('btn-secondary');
-        btnZoomIn.disabled = false;
-        btnZoomOut.disabled = false;
-        btnZoomReset.disabled = false;
-        btnPan.disabled = false;
     } else {
         btnAddRecognition.disabled = true;
         btnAddRecognition.classList.add('btn-outline-primary');
@@ -385,17 +356,12 @@ function setCalibrationStatus(isValid) {
         btnLassoSelect.disabled = true;
         btnLassoSelect.classList.add('btn-outline-secondary');
         btnLassoSelect.classList.remove('btn-secondary');
-        btnZoomIn.disabled = true;
-        btnZoomOut.disabled = true;
-        btnZoomReset.disabled = true;
-        btnPan.disabled = true;
         if (editor.mode === 'recognition') {
             editor.setMode('none'); // Exit mode if calibration lost
         }
         if (pickModeActive) deactivatePickMode();
         if (marqueeActive) deactivateMarquee();
         if (lassoActive) deactivateLasso();
-        if (panActive) deactivatePan();
     }
 }
 
@@ -735,8 +701,6 @@ function activateMarquee() {
     imageWrapper.classList.add('marquee-active');
     pointsLayer.style.pointerEvents = 'none';
     if (lassoActive) deactivateLasso();
-    if (panActive) deactivatePan();
-    if (pickModeActive) deactivatePickMode();
     btnMarqueeSelect.classList.remove('btn-secondary');
     btnMarqueeSelect.classList.add('btn-success');
     btnMarqueeSelect.classList.add('active');
@@ -827,8 +791,6 @@ function activateLasso() {
     editor.setMode('none');
     pointsLayer.style.pointerEvents = 'none';
     if (marqueeActive) deactivateMarquee();
-    if (panActive) deactivatePan();
-    if (pickModeActive) deactivatePickMode();
     btnLassoSelect.classList.remove('btn-secondary');
     btnLassoSelect.classList.add('btn-warning');
     btnLassoSelect.classList.add('active');
@@ -940,69 +902,6 @@ function applyLassoSelection() {
     deactivateLasso();
 }
 
-function setZoom(scale) {
-    zoomScale = scale;
-    targetImage.style.maxWidth = 'none';
-    targetImage.style.width = (targetImage.naturalWidth * zoomScale) + 'px';
-    editor.refreshPositions();
-}
-
-function activatePan() {
-    panActive = true;
-    isPanning = false;
-    pointsLayer.style.pointerEvents = 'none';
-    btnPan.classList.remove('btn-outline-dark');
-    btnPan.classList.add('btn-info');
-    btnPan.classList.add('active');
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.add('pan-active');
-    viewport.addEventListener('mousedown', onPanMouseDown, { passive: false });
-    viewport.addEventListener('mousemove', onPanMouseMove, { passive: false });
-    document.addEventListener('mouseup', onPanMouseUp);
-}
-
-function deactivatePan() {
-    panActive = false;
-    isPanning = false;
-    panLast = null;
-    pointsLayer.style.pointerEvents = 'auto';
-    btnPan.classList.remove('btn-info');
-    btnPan.classList.remove('active');
-    btnPan.classList.add('btn-outline-dark');
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.remove('pan-active');
-    viewport.classList.remove('pan-grabbing');
-    viewport.removeEventListener('mousedown', onPanMouseDown);
-    viewport.removeEventListener('mousemove', onPanMouseMove);
-    document.removeEventListener('mouseup', onPanMouseUp);
-}
-
-function onPanMouseDown(e) {
-    if (!panActive) return;
-    e.preventDefault();
-    isPanning = true;
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.add('pan-grabbing');
-    panLast = { x: e.clientX, y: e.clientY };
-}
-
-function onPanMouseMove(e) {
-    if (!panActive || !isPanning) return;
-    e.preventDefault();
-    const viewport = imageWrapper.parentElement;
-    const dx = e.clientX - panLast.x;
-    const dy = e.clientY - panLast.y;
-    viewport.scrollLeft -= dx;
-    viewport.scrollTop -= dy;
-    panLast = { x: e.clientX, y: e.clientY };
-}
-
-function onPanMouseUp() {
-    if (!panActive) return;
-    isPanning = false;
-    const viewport = imageWrapper.parentElement;
-    viewport.classList.remove('pan-grabbing');
-}
 function pointInPolygon(pt, poly) {
     let inside = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
